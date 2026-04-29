@@ -1,6 +1,4 @@
--- =====================================================================================
 -- PHASE 2: SECURITY, FULL MOCK DATA & ANALYTICAL QUERIES
--- =====================================================================================
 USE AskidaYemekDB;
 GO
 
@@ -84,19 +82,43 @@ BEGIN
 END;
 GO
 
--- 3. REPORTING & ANALYTICS (DQL)
--- Q1: Total Orders and Revenue per Restaurant (JOIN, GROUP BY)
-SELECT r.RestoranAdi, COUNT(s.SiparisID) AS ToplamSiparis, SUM(s.ToplamTutar) AS ToplamCiro
-FROM Restoranlar r INNER JOIN Siparisler s ON r.RestoranID = s.RestoranID
-GROUP BY r.RestoranAdi ORDER BY ToplamCiro DESC;
+-- 3. PROGRAMMABILITY (VIEWS & INDEXES)
+GO
+CREATE VIEW vw_AskidaYemekHavuzDurumu AS
+SELECT m.Ad, m.Soyad, a.BagisTutari, a.BagisTarihi, a.IsKullanildi
+FROM AskidaYemekHavuzu a
+INNER JOIN Musteriler m ON a.MusteriID = m.MusteriID;
+GO
 
--- Q2: Suspended Meals consumed by Verified Users (JOIN, WHERE)
-SELECT m.Ad, m.Soyad, COUNT(s.SiparisID) AS BedavaYedigiSiparisSayisi
-FROM Musteriler m INNER JOIN Siparisler s ON m.MusteriID = s.MusteriID
-WHERE m.IsVerified = 1 AND s.IsAskidaYemek = 1 GROUP BY m.Ad, m.Soyad;
+CREATE VIEW vw_AktifRestoranMenuleri AS
+SELECT r.RestoranAdi, y.YemekAdi, y.Fiyat, y.Kategori
+FROM Restoranlar r
+INNER JOIN Yemekler y ON r.RestoranID = y.RestoranID
+WHERE r.IsActive = 1 AND y.IsActive = 1;
+GO
 
--- Q3: Expensive Meals above Average Price (SUBQUERY)
-SELECT y.YemekAdi, r.RestoranAdi, y.Fiyat
-FROM Yemekler y INNER JOIN Restoranlar r ON y.RestoranID = r.RestoranID
-WHERE y.Fiyat > (SELECT AVG(Fiyat) FROM Yemekler)
-ORDER BY y.Fiyat DESC;
+CREATE NONCLUSTERED INDEX IX_Siparisler_SiparisTarihi ON Siparisler(SiparisTarihi);
+CREATE NONCLUSTERED INDEX IX_Musteriler_Eposta ON Musteriler(Eposta);
+GO
+
+-- 4. REPORTING & ANALYTICS (DQL)
+-- Order Details with Customer and Restaurant Info
+SELECT s.SiparisID, m.Ad + ' ' + m.Soyad AS MusteriAdSoyad, r.RestoranAdi, s.SiparisTarihi, s.ToplamTutar
+FROM Siparisler s
+INNER JOIN Musteriler m ON s.MusteriID = m.MusteriID
+INNER JOIN Restoranlar r ON s.RestoranID = r.RestoranID
+ORDER BY s.SiparisTarihi DESC;
+
+-- Average Cart Amount for Restaurants with >5 Orders
+SELECT r.RestoranAdi, COUNT(s.SiparisID) AS ToplamSiparisAdedi, AVG(s.ToplamTutar) AS OrtalamaSepetTutari
+FROM Restoranlar r
+INNER JOIN Siparisler s ON r.RestoranID = s.RestoranID
+GROUP BY r.RestoranAdi
+HAVING COUNT(s.SiparisID) > 5;
+
+-- Active Users with No Suspended Meal Donations
+SELECT m.Ad, m.Soyad, m.Eposta
+FROM Musteriler m
+WHERE NOT EXISTS (
+    SELECT 1 FROM AskidaYemekHavuzu a WHERE a.MusteriID = m.MusteriID
+) AND m.IsVerified = 0;
