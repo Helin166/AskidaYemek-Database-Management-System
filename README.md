@@ -27,5 +27,5 @@ Aşağıdaki diyagram, veritabanının fiziksel mimarisini ve 1:N (Bire-Çok) il
 ## 📌 Geliştirme Aşamaları (Roadmap)
 - [x] Temel veritabanı mimarisinin (Tablolar ve Kısıtlamalar) kurulması.
 - [x] İş kurallarını otomatize eden Trigger ve View'ların yazılması.
-- [ ] *Yakında:* Sisteme "Soft Delete" (IsActive) mantığının entegre edilmesi.
-- [ ] *Yakında:* Test verilerinin (Mock Data) yüklenmesi ve ileri düzey analitik sorguların (Subquery, Group By) oluşturulması.
+- [x] Sisteme "Soft Delete" (IsActive) mantığının tüm ana tablolara entegre edilmesi.
+- [x] Test verilerinin (100+ Mock Data) yüklenmesi ve ileri düzey analitik sorguların (Subquery, Group By, Not Exists) oluşturulması.
